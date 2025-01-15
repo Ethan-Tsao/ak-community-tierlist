@@ -1,0 +1,26 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Operator {
+  id     String @id @default(uuid())
+  name   String
+  class  String
+  rarity Int
+  tier   String
+  votes  Vote[]
+}
+
+model Vote {
+  id         String   @id @default(uuid())
+  operatorId String
+  voteType   String
+  createdAt  DateTime @default(now())
+
+  operator   Operator @relation(fields: [operatorId], references: [id])
+}
