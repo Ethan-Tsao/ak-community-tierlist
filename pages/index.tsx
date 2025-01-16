@@ -1,18 +1,31 @@
 import React, { useEffect, useState } from 'react';
 
-const tiers = ['S+', 'S', 'S-', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'F'];
-const classes = ['Vanguard', 'Guard', 'Defender', 'Sniper', 'Caster', 'Medic', 'Supporter', 'Specialist'];
+type Operator = {
+  id: string;
+  name: string;
+  class: string;
+  rarity: number;
+  tier: string;
+  img: string;
+  voteCounts: {
+    UPVOTE: number;
+    NEUTRAL: number;
+    DOWNVOTE: number;
+  };
+};
+
+const tiers = ['S+', 'S', 'S-', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'F'] as const;
+const classes = ['Vanguard', 'Guard', 'Defender', 'Sniper', 'Caster', 'Medic', 'Supporter', 'Specialist'] as const;
 
 export default function Home() {
-  const [operators, setOperators] = useState([]);
+  const [operators, setOperators] = useState<Operator[]>([]);
 
-  // Fetch operators from the API
   useEffect(() => {
     const fetchOperators = async () => {
       try {
         const response = await fetch('/api/operators');
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
+        const data: Operator[] = await response.json();
         setOperators(data);
       } catch (error) {
         console.error('Error fetching operators:', error);
@@ -22,18 +35,52 @@ export default function Home() {
     fetchOperators();
   }, []);
 
-  // Filter operators by tier and class
   const getOperatorsByTierAndClass = (tier: string, className: string) => {
     return operators.filter(
       (operator) => operator.tier === tier && operator.class.toLowerCase() === className.toLowerCase()
     );
   };
 
+  const handleVote = async (operatorId: string, voteType: string) => {
+    try {
+      const response = await fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operatorId, voteType }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to record vote: ${response.statusText}`);
+      }
+  
+      // Update local state to reflect the new vote
+      setOperators((prevOperators) =>
+        prevOperators.map((operator) => {
+          if (operator.id === operatorId) {
+            return {
+              ...operator,
+              voteCounts: {
+                ...operator.voteCounts,
+                [voteType]: operator.voteCounts[voteType] + 1,
+              },
+            };
+          }
+          return operator;
+        })
+      );
+  
+      console.log(`Vote recorded: Operator ${operatorId}, Type ${voteType}`);
+    } catch (error) {
+      console.error('Error recording vote:', error);
+    }
+  };
+  
+
   return (
-    <div className="p-4 bg-gray-900 text-white min-h-screen w-[4300px] bg-gray-900 mx-auto">
+    <div className="p-4 bg-gray-900 text-white min-h-screen mx-auto">
       {/* Main Grid Container */}
       <div
-        className="grid gap-4 " // Fixed grid width
+        className="grid gap-4"
         style={{
           gridTemplateColumns: '150px repeat(8, 500px)', // Thin tier column, fixed class columns
         }}
@@ -54,10 +101,7 @@ export default function Home() {
         {/* Rows for Each Tier */}
         {tiers.map((tier) => (
           <React.Fragment key={`tier-${tier}`}>
-            {/* Tier Label */}
             <div className="text-center font-bold bg-gray-800 border border-gray-700 p-2">{tier}</div>
-
-            {/* Columns for Each Class */}
             {classes.map((className) => {
               const filteredOperators = getOperatorsByTierAndClass(tier, className);
 
@@ -65,31 +109,45 @@ export default function Home() {
                 <div
                   key={`operator-card-column-${tier}-${className}`}
                   className="border border-gray-700 bg-gray-800 rounded-lg p-4"
-
                 >
                   {filteredOperators.length > 0 ? (
                     <div className="grid grid-cols-3 gap-4">
                       {filteredOperators.map((operator) => (
-                        <div key={operator.id} className="flex flex-col items-center mb-4">
-                          {/* Operator Image */}
+                        <div key={operator.id} className="flex flex-col items-center mb-4 bg-gray-700 p-4 rounded-lg">
                           <img
                             src={`/avatars/${operator.img}.png` || 'https://via.placeholder.com/100'}
                             alt={operator.name}
                             className="w-16 h-16 rounded-full mb-2 border border-gray-600"
                           />
-                          {/* Operator Name */}
                           <div className="text-center font-bold">{operator.name}</div>
-                          {/* Vote Buttons */}
-                          <div className="flex items-center mt-2">
-                            <button className="w-8 bg-green-500 text-white px-2 py-1 rounded">+1</button>
-                            <button className="w-8 bg-gray-300 text-black px-2 py-1 rounded">0</button>
-                            <button className="w-8 bg-red-500 text-white px-2 py-1 rounded">-1</button>
+                          <div className="text-center mt-2">
+                            {/* Vote Buttons */}
+                            <div className="flex items-center mt-2 space-x-1">
+                                <button
+                                className="w-8 bg-green-500 text-white px-2 py-1 rounded"
+                                onClick={() => handleVote(operator.id, 'UPVOTE')}
+                                >
+                                    {operator.voteCounts.UPVOTE}
+                                </button>
+                                <button
+                                className="w-8 bg-gray-300 text-black px-2 py-1 rounded"
+                                onClick={() => handleVote(operator.id, 'NEUTRAL')}
+                                >
+                                    {operator.voteCounts.NEUTRAL}
+                                </button>
+                                <button
+                                className="w-8 bg-red-500 text-white px-2 py-1 rounded"
+                                onClick={() => handleVote(operator.id, 'DOWNVOTE')}
+                                >
+                                    {operator.voteCounts.DOWNVOTE}
+                                </button>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div></div>
+                    <div className="text-center text-gray-400">No Operators</div>
                   )}
                 </div>
               );

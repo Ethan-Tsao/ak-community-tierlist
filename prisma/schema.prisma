@@ -20,8 +20,14 @@ model Operator {
 model Vote {
   id         String   @id @default(uuid())
   operatorId String
-  voteType   String
+  voteType   VoteType
   createdAt  DateTime @default(now())
 
   operator   Operator @relation(fields: [operatorId], references: [id])
+}
+
+enum VoteType {
+  UPVOTE
+  NEUTRAL
+  DOWNVOTE
 }
