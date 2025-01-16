@@ -77,7 +77,7 @@ export default function Home() {
   
 
   return (
-    <div className="p-4 bg-gray-900 text-white min-h-screen mx-auto">
+    <div className="w-[4300px] p-4 bg-gray-900 text-white min-h-screen mx-auto">
       {/* Main Grid Container */}
       <div
         className="grid gap-4"
