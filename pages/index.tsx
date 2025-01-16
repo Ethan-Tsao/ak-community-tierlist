@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { PrismaClient } from '@prisma/client';
+import React from 'react';
 
 type Operator = {
   id: string;
@@ -14,27 +15,46 @@ type Operator = {
   };
 };
 
+const prisma = new PrismaClient();
+
 const tiers = ['S+', 'S', 'S-', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'F'] as const;
 const classes = ['Vanguard', 'Guard', 'Defender', 'Sniper', 'Caster', 'Medic', 'Supporter', 'Specialist'] as const;
 
-export default function Home() {
-  const [operators, setOperators] = useState<Operator[]>([]);
+// Fetch data at build time and enable revalidation
+export async function getStaticProps() {
+  const operators = await prisma.operator.findMany({
+    include: {
+      votes: true, // Include vote data
+    },
+  });
 
-  useEffect(() => {
-    const fetchOperators = async () => {
-      try {
-        const response = await fetch('/api/operators');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data: Operator[] = await response.json();
-        setOperators(data);
-      } catch (error) {
-        console.error('Error fetching operators:', error);
-      }
+  const operatorsWithVoteCounts = operators.map((operator) => {
+    const voteCounts = { UPVOTE: 0, NEUTRAL: 0, DOWNVOTE: 0 };
+
+    operator.votes.forEach((vote) => {
+      voteCounts[vote.voteType]++;
+    });
+
+    return {
+      ...operator,
+      votes: operator.votes.map((vote) => ({
+        ...vote,
+        createdAt: vote.createdAt.toISOString(), // Serialize Date object
+      })),
+      voteCounts,
     };
+  });
 
-    fetchOperators();
-  }, []);
+  return {
+    props: {
+      operators: operatorsWithVoteCounts,
+    },
+    revalidate: 60, // Revalidate every 60 seconds
+  };
+}
 
+
+export default function Home({ operators }: { operators: Operator[] }) {
   const getOperatorsByTierAndClass = (tier: string, className: string) => {
     return operators.filter(
       (operator) => operator.tier === tier && operator.class.toLowerCase() === className.toLowerCase()
@@ -48,33 +68,19 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operatorId, voteType }),
       });
-  
+
       if (!response.ok) {
-        throw new Error(`Failed to record vote: ${response.statusText}`);
+        const error = await response.json();
+        alert(error.error);
+        return;
       }
-  
-      // Update local state to reflect the new vote
-      setOperators((prevOperators) =>
-        prevOperators.map((operator) => {
-          if (operator.id === operatorId) {
-            return {
-              ...operator,
-              voteCounts: {
-                ...operator.voteCounts,
-                [voteType]: operator.voteCounts[voteType] + 1,
-              },
-            };
-          }
-          return operator;
-        })
-      );
-  
+
       console.log(`Vote recorded: Operator ${operatorId}, Type ${voteType}`);
+      alert('Vote recorded. Refresh the page after 60 seconds for updates.');
     } catch (error) {
       console.error('Error recording vote:', error);
     }
   };
-  
 
   return (
     <div className="w-[4300px] p-4 bg-gray-900 text-white min-h-screen mx-auto">
@@ -123,24 +129,24 @@ export default function Home() {
                           <div className="text-center mt-2">
                             {/* Vote Buttons */}
                             <div className="flex items-center mt-2 space-x-1">
-                                <button
+                              <button
                                 className="w-8 bg-green-500 text-white px-2 py-1 rounded"
                                 onClick={() => handleVote(operator.id, 'UPVOTE')}
-                                >
-                                    {operator.voteCounts.UPVOTE}
-                                </button>
-                                <button
+                              >
+                                {operator.voteCounts.UPVOTE}
+                              </button>
+                              <button
                                 className="w-8 bg-gray-300 text-black px-2 py-1 rounded"
                                 onClick={() => handleVote(operator.id, 'NEUTRAL')}
-                                >
-                                    {operator.voteCounts.NEUTRAL}
-                                </button>
-                                <button
+                              >
+                                {operator.voteCounts.NEUTRAL}
+                              </button>
+                              <button
                                 className="w-8 bg-red-500 text-white px-2 py-1 rounded"
                                 onClick={() => handleVote(operator.id, 'DOWNVOTE')}
-                                >
-                                    {operator.voteCounts.DOWNVOTE}
-                                </button>
+                              >
+                                {operator.voteCounts.DOWNVOTE}
+                              </button>
                             </div>
                           </div>
                         </div>

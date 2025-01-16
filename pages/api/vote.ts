@@ -1,5 +1,7 @@
 import { PrismaClient, VoteType } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
+// import cookie from 'cookie';
+import requestIp from 'request-ip';
 
 const prisma = new PrismaClient();
 
@@ -9,23 +11,76 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { operatorId, voteType } = req.body;
-  console.log(req.body)
+  const ipAddress = requestIp.getClientIp(req);
 
-  if (!operatorId || !voteType) {
-    return res.status(400).json({ error: 'Missing operatorId or voteType' });
+  if (!operatorId || !voteType || !ipAddress) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  if (!Object.values(VoteType).includes(voteType)) {
+  if (!(voteType in VoteType)) {
     return res.status(400).json({ error: 'Invalid voteType' });
   }
 
   try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const existingvote = await prisma.vote.findFirst({
+      where: {
+        operatorId,
+        ipAddress: String(ipAddress),
+        createdAt: {
+          gte: today,
+        },
+      },
+    });
+
+    if (existingvote) {
+      return res.status(400).json({ error: 'You can only vote once per operator per day' });
+    }
+
+    // const cookies = cookie.parse(req.headers.cookie || '');
+    // let votesCookie = {};
+    // try {
+    //   votesCookie = cookies.votes ? JSON.parse(cookies.votes) : {};
+    // } catch (err) {
+    //   console.error('Failed to parse votes cookie:', err);
+    // }
+
+    // if (votesCookie[operatorId] && new Date(votesCookie[operatorId]).getTime() >= today.getTime()) {
+    //   return res.status(400).json({ error: 'You can only vote once per operator per day' });
+    // }
+
     await prisma.vote.create({
       data: {
         operatorId,
+        ipAddress: String(ipAddress),
         voteType,
       },
     });
+
+    const revalidateResponse = await fetch(`${process.env.BASE_URL}/api/revalidate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret: process.env.REVALIDATION_TOKEN,
+        path: '/',
+      }),
+    });
+
+    if (!revalidateResponse.ok) {
+      console.error('Revalidation failed:', await revalidateResponse.text());
+    }
+
+    // votesCookie[operatorId] = new Date().toISOString();
+    // res.setHeader(
+    //   'Set-Cookie',
+    //   cookie.serialize('votes', JSON.stringify(votesCookie), {
+    //     path: '/',
+    //     httpOnly: true,
+    //     maxAge: 24 * 60 * 60, // 1 day
+    //   })
+    // );
 
     return res.status(200).json({ message: 'Vote recorded successfully' });
   } catch (error) {

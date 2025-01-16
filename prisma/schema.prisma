@@ -20,10 +20,13 @@ model Operator {
 model Vote {
   id         String   @id @default(uuid())
   operatorId String
+  ipAddress  String   @default("unknown")
   voteType   VoteType
   createdAt  DateTime @default(now())
 
   operator   Operator @relation(fields: [operatorId], references: [id])
+
+  @@unique([operatorId, ipAddress, createdAt])
 }
 
 enum VoteType {
