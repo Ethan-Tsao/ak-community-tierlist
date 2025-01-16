@@ -67,6 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         path: '/',
       }),
     });
+    console.log("revalidation failed")
 
     if (!revalidateResponse.ok) {
       console.error('Revalidation failed:', await revalidateResponse.text());
