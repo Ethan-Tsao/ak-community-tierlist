@@ -13,6 +13,7 @@ model Operator {
   class  String
   rarity Int
   tier   String
+  img    String
   votes  Vote[]
 }
 

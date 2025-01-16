@@ -1,84 +1,95 @@
 import React, { useEffect, useState } from 'react';
 
-const tiers = ['S+','S', 'S-', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'F'];
-const classes = ['Sniper', 'Guard', 'Defender', 'Medic', 'Supporter', 'Caster', 'Specialist', 'Vanguard'];
+const tiers = ['S+', 'S', 'S-', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'F'];
+const classes = ['Vanguard', 'Guard', 'Defender', 'Sniper', 'Caster', 'Medic', 'Supporter', 'Specialist'];
 
 export default function Home() {
-    console.log('Home component rendered'); // Log when the component renders
-
   const [operators, setOperators] = useState([]);
 
   // Fetch operators from the API
   useEffect(() => {
-    console.log('useEffect triggered'); // Log when useEffect is triggered
-  
     const fetchOperators = async () => {
       try {
-        console.log('Fetching operators...'); // Log before fetch
         const response = await fetch('/api/operators');
-  
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-  
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        console.log('Fetched operators:', data); // Log fetched data
         setOperators(data);
       } catch (error) {
-        console.error('Error fetching operators:', error); // Log errors
+        console.error('Error fetching operators:', error);
       }
     };
-  
+
     fetchOperators();
   }, []);
 
-  // Helper function to filter operators by tier and class
+  // Filter operators by tier and class
   const getOperatorsByTierAndClass = (tier: string, className: string) => {
-    const filtered = operators.filter(
-      (operator) => operator.tier === tier && operator.class === className.toLowerCase()
+    return operators.filter(
+      (operator) => operator.tier === tier && operator.class.toLowerCase() === className.toLowerCase()
     );
-    console.log(`Filtered Operators for Tier ${tier} and Class ${className}:`, filtered);
-    return filtered;
   };
-  
 
   return (
-    <div className="p-4 bg-gray-900 text-white min-h-screen">
-      <div className="grid grid-cols-9 auto-rows-min gap-2 border border-gray-700">
+    <div className="p-4 bg-gray-900 text-white min-h-screen w-[4300px] bg-gray-900 mx-auto">
+      {/* Main Grid Container */}
+      <div
+        className="grid gap-4 " // Fixed grid width
+        style={{
+          gridTemplateColumns: '150px repeat(8, 500px)', // Thin tier column, fixed class columns
+        }}
+      >
+        {/* Empty Top-Left Cell */}
         <div className="border border-gray-700"></div>
+
+        {/* Class Headers */}
         {classes.map((className) => (
-          <div key={`class-${className}`} className="text-center font-bold bg-gray-800 border border-gray-700 p-2">
+          <div
+            key={`class-${className}`}
+            className="text-center font-bold bg-gray-800 border border-gray-700 p-2"
+          >
             {className}
           </div>
         ))}
 
+        {/* Rows for Each Tier */}
         {tiers.map((tier) => (
           <React.Fragment key={`tier-${tier}`}>
-            <div className="text-center font-bold bg-gray-800 border border-gray-700 p-2">
-              {tier}
-            </div>
+            {/* Tier Label */}
+            <div className="text-center font-bold bg-gray-800 border border-gray-700 p-2">{tier}</div>
+
+            {/* Columns for Each Class */}
             {classes.map((className) => {
               const filteredOperators = getOperatorsByTierAndClass(tier, className);
+
               return (
-                <div key={`operator-card-${tier}-${className}`} className="border border-gray-700 bg-gray-800 rounded-lg p-4">
+                <div
+                  key={`operator-card-column-${tier}-${className}`}
+                  className="border border-gray-700 bg-gray-800 rounded-lg p-4"
+
+                >
                   {filteredOperators.length > 0 ? (
-                    filteredOperators.map((operator) => (
-                      <div key={operator.id} className="mb-4">
-                        <img
-                          src="https://via.placeholder.com/100"
-                          alt={operator.name}
-                          className="w-16 h-16 rounded-full mb-2 border border-gray-600"
-                        />
-                        <div className="text-center font-bold">{operator.name}</div>
-                        <div className="flex justify-around mt-2 w-full">
-                          <button className="bg-green-500 text-white px-2 py-1 rounded">+1</button>
-                          <button className="bg-gray-300 text-black px-2 py-1 rounded">Neutral</button>
-                          <button className="bg-red-500 text-white px-2 py-1 rounded">-1</button>
+                    <div className="grid grid-cols-3 gap-4">
+                      {filteredOperators.map((operator) => (
+                        <div key={operator.id} className="flex flex-col items-center mb-4">
+                          {/* Operator Image */}
+                          <img
+                            src={`/avatars/${operator.img}.png` || 'https://via.placeholder.com/100'}
+                            alt={operator.name}
+                            className="w-16 h-16 rounded-full mb-2 border border-gray-600"
+                          />
+                          {/* Operator Name */}
+                          <div className="text-center font-bold">{operator.name}</div>
+                          {/* Vote Buttons */}
+                          <div className="flex items-center mt-2">
+                            <button className="w-8 bg-green-500 text-white px-2 py-1 rounded">+1</button>
+                            <button className="w-8 bg-gray-300 text-black px-2 py-1 rounded">0</button>
+                            <button className="w-8 bg-red-500 text-white px-2 py-1 rounded">-1</button>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   ) : (
-                    <div className="text-center text-gray-400">No Operators</div>
+                    <div></div>
                   )}
                 </div>
               );
