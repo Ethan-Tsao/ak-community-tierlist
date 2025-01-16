@@ -76,7 +76,7 @@ export default function Home({ operators }: { operators: Operator[] }) {
       }
 
       console.log(`Vote recorded: Operator ${operatorId}, Type ${voteType}`);
-      alert('Vote recorded. Refresh the page after 60 seconds for updates.');
+      alert('Vote recorded');
     } catch (error) {
       console.error('Error recording vote:', error);
     }
