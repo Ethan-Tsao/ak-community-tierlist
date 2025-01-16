@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import React, { useState } from 'react';
+import { FaArrowDownLong, FaArrowUpLong } from "react-icons/fa6";
+import Link from 'next/link';
 
 type Operator = {
   id: string;
@@ -168,39 +170,56 @@ export default function Home({ initialOperators }: { initialOperators: Operator[
                   className="border border-gray-700 bg-gray-800 rounded-lg p-4"
                 >
                   {filteredOperators.length > 0 ? (
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-2">
                       {filteredOperators.map((operator) => (
-                        <div key={operator.id} className="flex flex-col items-center mb-4 bg-gray-700 p-4 rounded-lg">
-                          <img
-                            src={`/avatars/${operator.img}.png` || 'https://via.placeholder.com/100'}
-                            alt={operator.name}
-                            className="w-16 h-16 rounded-full mb-2 border border-gray-600"
-                          />
-                          <div className="text-center font-bold">{operator.name}</div>
-                          <div className="text-center mt-2">
-                            {/* Vote Buttons */}
-                            <div className="flex items-center mt-2 space-x-1">
-                              <button
-                                className="w-8 bg-green-500 text-white px-2 py-1 rounded"
-                                onClick={() => handleVote(operator.id, 'UPVOTE')}
-                              >
-                                {operator.voteCounts.UPVOTE}
-                              </button>
-                              <button
-                                className="w-8 bg-gray-300 text-black px-2 py-1 rounded"
-                                onClick={() => handleVote(operator.id, 'NEUTRAL')}
-                              >
-                                {operator.voteCounts.NEUTRAL}
-                              </button>
-                              <button
-                                className="w-8 bg-red-500 text-white px-2 py-1 rounded"
-                                onClick={() => handleVote(operator.id, 'DOWNVOTE')}
-                              >
-                                {operator.voteCounts.DOWNVOTE}
-                              </button>
+                        <Link key={operator.id} href={`https://arknights.wiki.gg/wiki/${operator.id}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center mb-4 bg-gray-700 p-4 rounded-lg hover:bg-gray-600 transition-colors duration-200">
+                          <div key={operator.id} className="flex flex-col items-center mb-1 bg-gray-700 p-4 rounded-lg">
+                            <img
+                              src={`/avatars/${operator.img}.png` || 'https://via.placeholder.com/100'}
+                              alt={operator.name}
+                              className="w-16 h-16 rounded-full mb-2 border border-gray-600"
+                            />
+                            <div className="text-center font-bold">{operator.name}</div>
+                            <div className="text-center mt-2">
+                              {/* Vote Buttons */}
+                              <div className="flex items-center mt-2 space-x-1">
+                                <button
+                                  className="flex items-center justify-center space-x-1 w-8 bg-green-500 text-white pr-1 py-1 rounded"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleVote(operator.id, 'UPVOTE')}
+                                  }
+                                >
+                                  <FaArrowUpLong />
+                                  <span>{operator.voteCounts.UPVOTE}</span>
+                                </button>
+                                <button
+                                  className="flex items-center justify-center space-x-1 w-8 bg-gray-300 text-black py-1 rounded"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleVote(operator.id, 'NEUTRAL')}
+                                  }
+                                >
+                                  <span>{operator.voteCounts.NEUTRAL}</span>
+                                </button>
+                                <button
+                                  className="flex items-center justify-center space-x-1 w-8 bg-red-500 text-white pr-1 py-1 rounded"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleVote(operator.id, 'DOWNVOTE')}
+                                  }
+                                >
+                                  <FaArrowDownLong />
+                                  <span>{operator.voteCounts.DOWNVOTE}</span>
+                                </button>
+                              </div>
+
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   ) : (
