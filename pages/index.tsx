@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import React from 'react';
+import React, { useState } from 'react';
 
 type Operator = {
   id: string;
@@ -47,21 +47,38 @@ export async function getStaticProps() {
 
   return {
     props: {
-      operators: operatorsWithVoteCounts,
+      initialOperators: operatorsWithVoteCounts,
     },
-    revalidate: 60, // Revalidate every 60 seconds
+    revalidate: 3600, // Revalidate every 60 seconds
   };
 }
 
+export default function Home({ initialOperators }: { initialOperators: Operator[] }) {
+  const [operators, setOperators] = useState<Operator[]>(initialOperators);
 
-export default function Home({ operators }: { operators: Operator[] }) {
   const getOperatorsByTierAndClass = (tier: string, className: string) => {
     return operators.filter(
       (operator) => operator.tier === tier && operator.class.toLowerCase() === className.toLowerCase()
     );
   };
 
-  const handleVote = async (operatorId: string, voteType: string) => {
+  const handleVote = async (operatorId: string, voteType: keyof Operator['voteCounts']) => {
+    // Optimistically update the local state
+    setOperators((prevOperators) =>
+      prevOperators.map((operator) => {
+        if (operator.id === operatorId) {
+          return {
+            ...operator,
+            voteCounts: {
+              ...operator.voteCounts,
+              [voteType]: operator.voteCounts[voteType] + 1,
+            },
+          };
+        }
+        return operator;
+      })
+    );
+
     try {
       const response = await fetch('/api/vote', {
         method: 'POST',
@@ -72,13 +89,47 @@ export default function Home({ operators }: { operators: Operator[] }) {
       if (!response.ok) {
         const error = await response.json();
         alert(error.error);
+
+        // Rollback the optimistic update in case of an error
+        setOperators((prevOperators) =>
+          prevOperators.map((operator) => {
+            if (operator.id === operatorId) {
+              return {
+                ...operator,
+                voteCounts: {
+                  ...operator.voteCounts,
+                  [voteType]: operator.voteCounts[voteType] - 1,
+                },
+              };
+            }
+            return operator;
+          })
+        );
+
         return;
       }
 
       console.log(`Vote recorded: Operator ${operatorId}, Type ${voteType}`);
-      alert('Vote recorded');
     } catch (error) {
       console.error('Error recording vote:', error);
+
+      // Rollback the optimistic update in case of an error
+      setOperators((prevOperators) =>
+        prevOperators.map((operator) => {
+          if (operator.id === operatorId) {
+            return {
+              ...operator,
+              voteCounts: {
+                ...operator.voteCounts,
+                [voteType]: operator.voteCounts[voteType] - 1,
+              },
+            };
+          }
+          return operator;
+        })
+      );
+
+      alert('Failed to record vote. Please try again.');
     }
   };
 
