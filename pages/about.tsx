@@ -2,7 +2,6 @@ import React from 'react';
 import Navbar from '../components/Navbar';
 import { FaDiscord, FaYoutube } from "react-icons/fa6";
 import Link from 'next/link';
-import Flex from 'next';
 
 export default function About() {
   return (
