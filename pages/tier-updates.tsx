@@ -16,9 +16,9 @@ export default function TierUpdates() {
 
         <div className="mt-6 space-y-4">
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold">January 2025</h2>
+            <h2 className="text-xl font-bold">January 16, 2025</h2>
             <ul className="list-disc list-inside text-gray-300 space-y-2">
-              <li>This is a placeholder</li>
+              <li>The Arknights Community Tier List is born</li>
             </ul>
           </div>
         </div>
