@@ -163,7 +163,7 @@ export default function Home({ initialOperators }: { initialOperators: Operator[
   };
 
   return (
-    <div className="w-[4300px] p-4 bg-gray-900 text-white min-h-screen mx-auto">
+    <div className="w-[4300px] p-4 bg-gray-900 text-white min-h-screen">
       <Navbar/>
 
       {/* Rules and Information */}
